@@ -1,6 +1,6 @@
 """
-数据库初始化脚本
-创建初始管理员用户和示例数据
+Database initialization script
+Create initial admin users and sample data
 """
 import asyncio
 from decimal import Decimal
@@ -11,12 +11,12 @@ from app.core.security import get_password_hash
 
 
 async def init_database():
-    """初始化数据库数据"""
+    """Initialize database with default data"""
     async with AsyncSessionLocal() as session:
-        print("🚀 开始初始化数据库...")
+        print("Starting database initialization...")
 
-        # 1. 创建管理员用户
-        print("\n📝 创建用户...")
+        # 1. Create admin users
+        print("\nCreating users...")
         admin = User(
             username="admin",
             hashed_password=get_password_hash("admin123"),
@@ -41,10 +41,10 @@ async def init_database():
         )
         session.add(operator)
 
-        print("   ✅ 创建了 3 个用户账号")
+        print("   Created 3 user accounts")
 
-        # 2. 创建示例纸张物料
-        print("\n📦 创建示例物料...")
+        # 2. Create sample materials
+        print("\nCreating sample materials...")
 
         materials = [
             Material(
@@ -147,25 +147,25 @@ async def init_database():
         for material in materials:
             session.add(material)
 
-        print(f"   ✅ 创建了 {len(materials)} 个物料")
+        print(f"   Created {len(materials)} materials")
 
-        # 提交所有数据
+        # Commit all data
         await session.commit()
-        print("\n✨ 数据库初始化完成！\n")
+        print("\nDatabase initialization completed!\n")
 
-        # 打印账号信息
+        # Print account information
         print("=" * 50)
-        print("📋 账号信息:")
+        print("Account Information:")
         print("=" * 50)
-        print("管理员账号:")
-        print("  用户名: admin")
-        print("  密码: admin123")
-        print("\n销售账号:")
-        print("  用户名: sales")
-        print("  密码: sales123")
-        print("\n操作员账号:")
-        print("  用户名: operator")
-        print("  密码: operator123")
+        print("Admin Account:")
+        print("  Username: admin")
+        print("  Password: admin123")
+        print("\nSales Account:")
+        print("  Username: sales")
+        print("  Password: sales123")
+        print("\nOperator Account:")
+        print("  Username: operator")
+        print("  Password: operator123")
         print("=" * 50)
 
 

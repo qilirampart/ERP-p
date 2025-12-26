@@ -8,7 +8,7 @@ import request from './request'
  */
 export function getMaterialList(params) {
   return request({
-    url: '/api/v1/materials/',
+    url: '/materials/',
     method: 'get',
     params
   })
@@ -19,7 +19,7 @@ export function getMaterialList(params) {
  */
 export function getMaterialDetail(id) {
   return request({
-    url: `/api/v1/materials/${id}`,
+    url: `/materials/${id}`,
     method: 'get'
   })
 }
@@ -29,7 +29,7 @@ export function getMaterialDetail(id) {
  */
 export function createMaterial(data) {
   return request({
-    url: '/api/v1/materials/',
+    url: '/materials/',
     method: 'post',
     data
   })
@@ -40,7 +40,7 @@ export function createMaterial(data) {
  */
 export function updateMaterial(id, data) {
   return request({
-    url: `/api/v1/materials/${id}`,
+    url: `/materials/${id}`,
     method: 'put',
     data
   })
@@ -51,7 +51,7 @@ export function updateMaterial(id, data) {
  */
 export function stockIn(data) {
   return request({
-    url: '/api/v1/materials/stock-in',
+    url: '/materials/stock-in',
     method: 'post',
     data
   })
@@ -62,7 +62,7 @@ export function stockIn(data) {
  */
 export function stockOut(data) {
   return request({
-    url: '/api/v1/materials/stock-out',
+    url: '/materials/stock-out',
     method: 'post',
     data
   })

@@ -1,37 +1,38 @@
 """
-安全相关工具：密码哈希、JWT Token生成与验证
+Security utilities: password hashing, JWT token generation and verification
 """
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 from app.core.config import settings
 
 
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password"""
+    return bcrypt.checkpw(
+        plain_password.encode('utf-8'),
+        hashed_password.encode('utf-8')
+    )
 
 
 def get_password_hash(password: str) -> str:
-    """生成密码哈希"""
-    return pwd_context.hash(password)
+    """Generate password hash"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """
-    创建JWT访问令牌
+    Create JWT access token
 
     Args:
-        data: 要编码的数据（通常包含 sub: user_id）
-        expires_delta: 过期时间增量
+        data: Data to encode (usually contains sub: user_id)
+        expires_delta: Token expiration time delta
 
     Returns:
-        编码后的JWT字符串
+        Encoded JWT string
     """
     to_encode = data.copy()
 
@@ -48,13 +49,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def decode_access_token(token: str) -> Optional[str]:
     """
-    解码JWT令牌
+    Decode JWT token
 
     Args:
-        token: JWT字符串
+        token: JWT string
 
     Returns:
-        用户ID（sub字段），解码失败返回None
+        User ID (sub field), None if decoding fails
     """
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])

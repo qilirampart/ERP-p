@@ -1,12 +1,16 @@
 /**
  * Axios HTTP客户端配置
+ * Version: 2.0.0 - Fixed API baseURL
  */
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 创建axios实例
+const BASE_URL = 'http://localhost:8000/api/v1'
+console.log('[Request] API baseURL:', BASE_URL)
+
 const request = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
+  baseURL: BASE_URL,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -16,6 +20,7 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
+    console.log('[Request] Sending:', config.method?.toUpperCase(), config.baseURL + config.url)
     // 从localStorage获取token
     const token = localStorage.getItem('access_token')
     if (token) {

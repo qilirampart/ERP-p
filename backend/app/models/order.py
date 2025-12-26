@@ -30,7 +30,15 @@ class Order(Base):
         index=True,
         comment="订单编号（格式：SO+YYYYMMDD+001）"
     )
-    customer_name: Mapped[str] = mapped_column(String(100), comment="客户名称")
+
+    # 客户信息
+    customer_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("erp_customers.id"),
+        nullable=True,
+        index=True,
+        comment="客户ID"
+    )
+    customer_name: Mapped[str] = mapped_column(String(100), comment="客户名称")  # 保留向后兼容
     contact_person: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, comment="联系人")
     contact_phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, comment="联系电话")
 
@@ -58,6 +66,25 @@ class Order(Base):
     # 关联订单明细（一对多）
     items: Mapped[List["OrderItem"]] = relationship(
         "OrderItem",
+        back_populates="order",
+        cascade="all, delete-orphan"
+    )
+
+    # 关联客户（多对一）
+    customer: Mapped[Optional["Customer"]] = relationship(
+        "Customer",
+        back_populates="orders"
+    )
+
+    # 关联生产工单（一对多）
+    production_orders: Mapped[List["ProductionOrder"]] = relationship(
+        "ProductionOrder",
+        back_populates="order"
+    )
+
+    # 关联收款记录（一对多）
+    payments: Mapped[List["OrderPayment"]] = relationship(
+        "OrderPayment",
         back_populates="order",
         cascade="all, delete-orphan"
     )

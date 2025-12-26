@@ -8,7 +8,7 @@ import request from './request'
  */
 export function getOrderList(params) {
   return request({
-    url: '/api/v1/orders/',
+    url: '/orders/',
     method: 'get',
     params
   })
@@ -19,7 +19,7 @@ export function getOrderList(params) {
  */
 export function getOrderDetail(id) {
   return request({
-    url: `/api/v1/orders/${id}`,
+    url: `/orders/${id}`,
     method: 'get'
   })
 }
@@ -29,7 +29,7 @@ export function getOrderDetail(id) {
  */
 export function createOrder(data) {
   return request({
-    url: '/api/v1/orders/',
+    url: '/orders/',
     method: 'post',
     data
   })
@@ -40,7 +40,7 @@ export function createOrder(data) {
  */
 export function updateOrder(id, data) {
   return request({
-    url: `/api/v1/orders/${id}`,
+    url: `/orders/${id}`,
     method: 'put',
     data
   })
@@ -51,7 +51,7 @@ export function updateOrder(id, data) {
  */
 export function confirmOrder(id) {
   return request({
-    url: `/api/v1/orders/${id}/confirm`,
+    url: `/orders/${id}/confirm`,
     method: 'post'
   })
 }
@@ -61,7 +61,7 @@ export function confirmOrder(id) {
  */
 export function deleteOrder(id) {
   return request({
-    url: `/api/v1/orders/${id}`,
+    url: `/orders/${id}`,
     method: 'delete'
   })
 }

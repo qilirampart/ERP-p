@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
 
     # CORS配置
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

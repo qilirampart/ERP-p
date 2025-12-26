@@ -8,7 +8,7 @@ import request from './request'
  */
 export function login(data) {
   return request({
-    url: '/api/v1/auth/login',
+    url: '/auth/login',
     method: 'post',
     data
   })
@@ -19,7 +19,7 @@ export function login(data) {
  */
 export function getCurrentUser() {
   return request({
-    url: '/api/v1/auth/me',
+    url: '/auth/me',
     method: 'get'
   })
 }

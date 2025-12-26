@@ -68,16 +68,84 @@ ERP-p/
 - Python 3.10+
 - Node.js 18+
 - MySQL 8.0
-- Redis 7.0
+- Poetry (Python依赖管理工具)
 
-### 1. 克隆项目
+### 方式一：一键启动（推荐⭐）
+
+#### 1️⃣ 首次使用 - 自动初始化
+
+```bash
+# 双击运行初始化脚本
+install.bat
+```
+
+该脚本会自动：
+- ✅ 检查Python和Node.js环境
+- ✅ 安装Poetry（如未安装）
+- ✅ 安装所有后端依赖
+- ✅ 安装所有前端依赖
+
+#### 2️⃣ 配置数据库
+
+创建 `backend/.env` 文件（参考 `.env.example`）：
+
+```env
+DATABASE_URL=mysql://root:password@localhost:3306/erp_db
+SECRET_KEY=your-secret-key-change-this-in-production
+DEBUG=True
+```
+
+创建数据库：
+```sql
+CREATE DATABASE erp_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+#### 3️⃣ 初始化数据库
+
+```bash
+cd backend
+poetry run alembic upgrade head
+poetry run python scripts/init_db.py
+cd ..
+```
+
+#### 4️⃣ 启动系统
+
+```bash
+# 批处理脚本（推荐，最简单）
+start.bat
+
+# 或 PowerShell脚本（功能更强，有端口检查）
+# 右键 start.ps1 → 使用PowerShell运行
+```
+
+启动成功后，两个服务窗口会自动打开：
+- 🔧 后端API: http://localhost:8000
+- 📚 API文档: http://localhost:8000/docs
+- 🎨 前端界面: http://localhost:5173
+
+#### 5️⃣ 停止系统
+
+```bash
+# 关闭启动的两个命令行窗口
+# 或运行停止脚本
+stop.bat
+```
+
+> 📖 **详细说明**: 查看 [启动脚本使用指南.md](启动脚本使用指南.md)
+
+---
+
+### 方式二：手动启动
+
+#### 1. 克隆项目
 
 ```bash
 git clone <repository-url>
 cd ERP-p
 ```
 
-### 2. 后端设置
+#### 2. 后端设置
 
 ```bash
 # 进入后端目录
@@ -92,12 +160,13 @@ cp .env.example .env
 
 # 创建数据库
 mysql -u root -p
-CREATE DATABASE print_erp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE erp_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 # 执行数据库迁移
 poetry run alembic upgrade head
 
-# 创建管理员账户（见 backend/README.md）
+# 初始化数据（创建管理员账户）
+poetry run python scripts/init_db.py
 
 # 启动后端服务
 poetry run uvicorn app.main:app --reload --port 8000
@@ -105,7 +174,7 @@ poetry run uvicorn app.main:app --reload --port 8000
 
 后端将在 http://localhost:8000 启动
 
-### 3. 前端设置
+#### 3. 前端设置
 
 ```bash
 # 进入前端目录
@@ -114,22 +183,21 @@ cd frontend
 # 安装依赖
 npm install
 
-# 配置环境变量
-cp .env.example .env
-
 # 启动开发服务器
 npm run dev
 ```
 
 前端将在 http://localhost:5173 启动
 
-### 4. 访问应用
+#### 4. 访问应用
 
 打开浏览器访问 http://localhost:5173
 
 默认管理员账号:
 - 用户名: `admin`
 - 密码: `admin123`
+
+> ⚠️ **生产环境请务必修改默认密码！**
 
 ## 核心算法说明
 
@@ -216,19 +284,26 @@ docker-compose down
 - [x] 数据库模型设计
 - [x] 核心业务算法（开纸计算、库存换算）
 - [x] 基础API接口（认证、物料、报价）
+- [x] **订单管理完整功能**（创建、查询、状态流转）
+- [x] **生产排程模块**（工单创建、开始、完成、报工）
+- [x] **用户认证与权限**（JWT Token、密码加密）
 - [x] 前端项目初始化
 - [x] UI设计系统
 - [x] 基础页面（登录、仪表盘、布局）
+- [x] **订单管理页面**（订单列表、创建、详情）
+- [x] **生产排程页面**（工单列表、创建、进度跟踪）
+- [x] **一键启动脚本**（批处理 + PowerShell）
 
 ### 🚧 开发中
-- [ ] 订单管理完整功能
-- [ ] 生产工单流程
-- [ ] 数据报表
-- [ ] 权限管理
+- [ ] 数据统计与报表
+- [ ] 库存管理模块
+- [ ] 财务管理模块
+- [ ] 客户管理模块
 
 ### 📅 计划中
-- [ ] 移动端适配
-- [ ] 数据导入/导出
+- [ ] 移动端适配（生产报工小程序）
+- [ ] 数据导入/导出（Excel）
+- [ ] 数据可视化（ECharts图表）
 - [ ] 微信通知
 - [ ] 客户端打印
 

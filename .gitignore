@@ -77,3 +77,40 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+# Test files and temporary files
+*.pdf
+test_*.py
+test_*.json
+test-*.bat
+nul
+login.json
+token.txt
+token_*.txt
+order_*.pdf
+prod_*.pdf
+ps_*.pdf
+delivery_*.pdf
+payment_*.pdf
+final_*.pdf
+real_*.pdf
+*_test.pdf
+*.jpg
+*.jpeg
+*.png
+
+# Temporary scripts
+restart-clean.bat
+rebuild-all.bat
+install.bat
+quick-start.bat
+
+# Cache and temporary HTML
+clear-cache.html
+force-clear-cache.html
+
+# Alembic versions
+backend/versions/
+
+# Frontend build
+frontend/.vite/

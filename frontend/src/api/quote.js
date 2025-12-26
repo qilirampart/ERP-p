@@ -8,7 +8,7 @@ import request from './request'
  */
 export function calculateQuote(data) {
   return request({
-    url: '/api/v1/quotes/calculate',
+    url: '/quotes/calculate',
     method: 'post',
     data
   })

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="flex-1 flex flex-col min-h-0">
     <!-- 头部 -->
     <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
       <div>
@@ -14,51 +14,89 @@
     <!-- 内容区 -->
     <div class="flex-1 overflow-y-auto px-8 lg:px-12 pb-12">
       <div class="max-w-7xl mx-auto">
-        <!-- 统计卡片 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div class="bento-card">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase">今日订单</span>
-              <el-icon class="text-indigo-500"><DocumentAdd /></el-icon>
+        <!-- 核心统计 - 2行3列紧凑网格 -->
+        <div class="grid grid-cols-3 gap-3 mb-4" v-loading="loading">
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">今日订单</p>
+              <p class="text-xl font-bold text-indigo-600">{{ stats.today_orders_count }}</p>
             </div>
-            <p class="text-3xl font-bold text-slate-800">{{ stats.todayOrders }}</p>
-            <p class="text-sm text-slate-500 mt-2">
-              <span class="text-green-500">+12%</span> 较昨日
-            </p>
           </div>
 
-          <div class="bento-card">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase">生产中</span>
-              <el-icon class="text-amber-500"><Setting /></el-icon>
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">生产中</p>
+              <p class="text-xl font-bold text-amber-600">{{ stats.production_in_progress }}</p>
             </div>
-            <p class="text-3xl font-bold text-slate-800">{{ stats.production }}</p>
-            <p class="text-sm text-slate-500 mt-2">5个工单</p>
           </div>
 
-          <div class="bento-card">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase">库存预警</span>
-              <el-icon class="text-red-500"><Warning /></el-icon>
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">库存预警</p>
+              <p class="text-xl font-bold text-red-600">{{ stats.low_stock_count }}</p>
             </div>
-            <p class="text-3xl font-bold text-slate-800">{{ stats.lowStock }}</p>
-            <p class="text-sm text-slate-500 mt-2">物料低于阈值</p>
           </div>
 
-          <div class="bento-card">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-slate-500 uppercase">本月营收</span>
-              <el-icon class="text-emerald-500"><Money /></el-icon>
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">待生产</p>
+              <p class="text-xl font-bold text-slate-600">{{ stats.production_pending }}</p>
             </div>
-            <p class="text-3xl font-bold text-slate-800 font-numeric">¥{{ stats.revenue }}</p>
-            <p class="text-sm text-slate-500 mt-2">
-              <span class="text-green-500">+28%</span> 较上月
-            </p>
+          </div>
+
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">今日完成</p>
+              <p class="text-xl font-bold text-emerald-600">{{ stats.production_completed_today }}</p>
+            </div>
+          </div>
+
+          <div class="bento-card p-2">
+            <div class="text-center">
+              <p class="text-xs text-slate-500 mb-0.5">订单总数</p>
+              <p class="text-xl font-bold text-blue-600">{{ stats.total_orders_count }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 财务数据 - 1行4列 -->
+        <div class="grid grid-cols-4 gap-3 mb-4">
+          <div class="bento-card p-2">
+            <p class="text-xs text-slate-500 mb-0.5">今日订单额</p>
+            <p class="text-base font-bold text-slate-800">{{ formatAmount(stats.today_orders_amount) }}</p>
+          </div>
+
+          <div class="bento-card p-2">
+            <p class="text-xs text-slate-500 mb-0.5">本月收款</p>
+            <p class="text-base font-bold text-emerald-600">{{ formatAmount(stats.month_payment_amount) }}</p>
+          </div>
+
+          <div class="bento-card p-2">
+            <p class="text-xs text-slate-500 mb-0.5">本月订单额</p>
+            <p class="text-base font-bold text-indigo-600">{{ formatAmount(stats.month_order_amount) }}</p>
+          </div>
+
+          <div class="bento-card p-2">
+            <p class="text-xs text-slate-500 mb-0.5">应收账款</p>
+            <p class="text-base font-bold text-orange-600">{{ formatAmount(stats.total_receivable) }}</p>
+          </div>
+        </div>
+
+        <!-- 回款率 -->
+        <div class="bento-card p-3 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-500 mb-1">本月回款率</p>
+              <p class="text-2xl font-bold text-emerald-600">{{ stats.payment_rate }}%</p>
+            </div>
+            <div class="text-right text-xs text-slate-600">
+              {{ formatAmount(stats.month_payment_amount) }} / {{ formatAmount(stats.month_order_amount) }}
+            </div>
           </div>
         </div>
 
         <!-- 快速操作 -->
-        <div class="bento-card mb-6">
+        <div class="bento-card">
           <h3 class="text-lg font-bold text-slate-800 mb-4">快速操作</h3>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <button
@@ -100,47 +138,17 @@
             </button>
           </div>
         </div>
-
-        <!-- 待办事项 -->
-        <div class="bento-card">
-          <h3 class="text-lg font-bold text-slate-800 mb-4">待处理事项</h3>
-          <div class="space-y-3">
-            <div class="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <el-icon class="text-indigo-500 mr-3"><Clock /></el-icon>
-              <div class="flex-1">
-                <p class="text-sm font-medium text-slate-700">订单 SO20251207001 待确认</p>
-                <p class="text-xs text-slate-400">2小时前</p>
-              </div>
-              <el-tag size="small" type="warning">待处理</el-tag>
-            </div>
-
-            <div class="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <el-icon class="text-amber-500 mr-3"><Warning /></el-icon>
-              <div class="flex-1">
-                <p class="text-sm font-medium text-slate-700">双铜纸 157g 库存不足</p>
-                <p class="text-xs text-slate-400">1天前</p>
-              </div>
-              <el-tag size="small" type="danger">紧急</el-tag>
-            </div>
-
-            <div class="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer">
-              <el-icon class="text-emerald-500 mr-3"><Check /></el-icon>
-              <div class="flex-1">
-                <p class="text-sm font-medium text-slate-700">生产工单 PRD001 已完工</p>
-                <p class="text-xs text-slate-400">3小时前</p>
-              </div>
-              <el-tag size="small" type="success">已完成</el-tag>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { getDashboardStats } from '@/api/dashboard'
+import { ElMessage } from 'element-plus'
 import {
   DocumentAdd,
   Setting,
@@ -151,20 +159,59 @@ import {
   Printer,
   DataAnalysis,
   Clock,
-  Check
+  Check,
+  TrendCharts
 } from '@element-plus/icons-vue'
 
+const router = useRouter()
 const userStore = useUserStore()
 
+// 统计数据
 const stats = ref({
-  todayOrders: 12,
-  production: 8,
-  lowStock: 3,
-  revenue: '125,600'
+  today_orders_count: 0,
+  today_orders_amount: '0.00',
+  total_orders_count: 0,
+  production_in_progress: 0,
+  production_pending: 0,
+  production_completed_today: 0,
+  low_stock_count: 0,
+  total_materials_count: 0,
+  month_payment_amount: '0.00',
+  month_order_amount: '0.00',
+  payment_rate: '0.00',
+  total_receivable: '0.00'
 })
 
-const loadData = () => {
-  // TODO: 加载实际数据
-  console.log('刷新数据')
+// 加载状态
+const loading = ref(false)
+
+// 加载数据
+const loadData = async () => {
+  loading.value = true
+  try {
+    const response = await getDashboardStats()
+    if (response.code === 200) {
+      stats.value = response.data.stats
+    }
+  } catch (error) {
+    console.error('加载仪表盘数据失败:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
+  }
 }
+
+// 格式化金额
+const formatAmount = (amount) => {
+  return new Intl.NumberFormat('zh-CN', {
+    style: 'currency',
+    currency: 'CNY',
+    minimumFractionDigits: 2
+  }).format(amount)
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadData()
+})
 </script>

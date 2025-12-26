@@ -58,7 +58,10 @@ import {
   Box,
   Setting,
   Printer,
-  Right
+  Right,
+  User,
+  Money,
+  DataAnalysis
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -70,6 +73,9 @@ userStore.restoreUserInfo()
 const menuItems = ref([
   { name: '仪表盘', path: '/dashboard', icon: DataBoard },
   { name: '销售开单', path: '/orders', icon: DocumentAdd },
+  { name: '客户管理', path: '/customers', icon: User },
+  { name: '收款管理', path: '/payments', icon: Money },
+  { name: '财务报表', path: '/reports', icon: DataAnalysis },
   { name: '库存管理', path: '/materials', icon: Box },
   { name: '生产排程', path: '/production', icon: Setting }
 ])
