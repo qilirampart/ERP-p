@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="h-full flex flex-col">
     <!-- 头部 -->
     <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
       <div>

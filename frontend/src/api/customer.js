@@ -2,6 +2,7 @@
  * 客户管理API
  */
 import request from './request'
+import { downloadTemplate, exportExcel, importExcel } from './excel'
 
 /**
  * 获取客户列表
@@ -92,3 +93,32 @@ export function getCustomerOrders(id, params) {
     params
   })
 }
+
+// ==================== Excel导入导出 ====================
+
+/**
+ * 下载客户导入模板
+ */
+export function downloadCustomerTemplate() {
+  return downloadTemplate('/customers/excel/template', '客户导入模板.xlsx')
+}
+
+/**
+ * 导出客户数据
+ * @param {Object} params - 筛选参数
+ * @param {string} params.keyword - 搜索关键词
+ * @param {string} params.status - 客户状态
+ * @param {string} params.customer_level - 客户等级
+ */
+export function exportCustomers(params = {}) {
+  return exportExcel('/customers/excel/export', params, '客户数据.xlsx')
+}
+
+/**
+ * 导入客户数据
+ * @param {File} file - Excel文件
+ */
+export function importCustomers(file) {
+  return importExcel('/customers/excel/import', file)
+}
+

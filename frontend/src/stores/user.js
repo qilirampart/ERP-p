@@ -66,8 +66,8 @@ export const useUserStore = defineStore('user', () => {
     }
 
     try {
-      // 尝试调用一个需要认证的API来验证token
-      const response = await fetch('http://localhost:8000/api/v1/materials/?page=1&page_size=1', {
+      // 尝试调用一个需要认证的API来验证token（使用相对路径）
+      const response = await fetch('/api/v1/materials/?page=1&page_size=1', {
         headers: {
           'Authorization': `Bearer ${token.value}`
         }
@@ -82,6 +82,10 @@ export const useUserStore = defineStore('user', () => {
 
       if (response.ok) {
         tokenValidated.value = true
+        // 确保恢复用户信息
+        if (!userInfo.value) {
+          restoreUserInfo()
+        }
         return true
       }
 

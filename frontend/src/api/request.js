@@ -6,7 +6,8 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 创建axios实例
-const BASE_URL = 'http://localhost:8000/api/v1'
+// 使用相对路径，通过Nginx反向代理访问后端
+const BASE_URL = '/api/v1'
 console.log('[Request] API baseURL:', BASE_URL)
 
 const request = axios.create({

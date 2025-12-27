@@ -5,9 +5,9 @@
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import String, Integer, Numeric, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 import enum
 
@@ -50,6 +50,16 @@ class Material(Base):
         default=Decimal("0.00"),
         comment="当前库存（以stock_unit为准）"
     )
+    min_stock: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        default=Decimal("0.00"),
+        comment="最低库存预警值（张）"
+    )
+    safety_stock: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        default=Decimal("0.00"),
+        comment="安全库存值（张）"
+    )
     cost_price: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         default=Decimal("0.00"),
@@ -64,5 +74,27 @@ class Material(Base):
         comment="更新时间"
     )
 
+    # 关系
+    stock_records: Mapped[List["StockRecord"]] = relationship(
+        "StockRecord",
+        back_populates="material",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
         return f"<Material(code='{self.code}', name='{self.name}', stock={self.current_stock})>"
+
+    def get_stock_status(self) -> str:
+        """
+        获取库存状态
+        Returns:
+            NORMAL: 正常 (库存 > safety_stock)
+            WARNING: 预警 (min_stock < 库存 <= safety_stock)
+            CRITICAL: 严重 (库存 <= min_stock)
+        """
+        if self.current_stock <= self.min_stock:
+            return "CRITICAL"
+        elif self.current_stock <= self.safety_stock:
+            return "WARNING"
+        else:
+            return "NORMAL"

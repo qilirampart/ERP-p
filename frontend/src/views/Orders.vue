@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="h-full flex flex-col">
     <!-- 头部 -->
     <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
       <div>
@@ -7,6 +7,9 @@
         <p class="text-sm text-slate-500 mt-1">订单管理 / 智能报价</p>
       </div>
       <div class="flex items-center space-x-4">
+        <el-button type="info" plain @click="handleExport">
+          导出Excel
+        </el-button>
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新建订单
         </el-button>
@@ -531,7 +534,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search, View, Edit, Delete, Check, Top, Bottom, Money, Wallet, Printer } from '@element-plus/icons-vue'
-import { getOrderList, getOrderDetail, createOrder, confirmOrder, deleteOrder } from '@/api/order'
+import { getOrderList, getOrderDetail, createOrder, confirmOrder, deleteOrder, exportOrders } from '@/api/order'
 import { getMaterialList } from '@/api/material'
 import { getCustomerList } from '@/api/customer'
 import { createPayment, getPaymentList, getOrderPaymentSummary } from '@/api/payment'
@@ -1071,6 +1074,27 @@ const formatDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// ==================== Excel导出 ====================
+
+// 导出Excel
+const handleExport = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出数据，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    // 使用当前筛选条件导出
+    await exportOrders(filters)
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
 }
 
 // 初始化

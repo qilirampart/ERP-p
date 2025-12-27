@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="h-full flex flex-col">
     <!-- 头部 -->
     <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
       <div>
@@ -7,11 +7,28 @@
         <p class="text-sm text-slate-500 mt-1">客户档案 / 交易统计</p>
       </div>
       <div class="flex items-center space-x-4">
+        <el-button type="success" plain @click="handleDownloadTemplate">
+          下载模板
+        </el-button>
+        <el-button type="warning" plain @click="triggerFileInput">
+          导入Excel
+        </el-button>
+        <el-button type="info" plain @click="handleExport">
+          导出Excel
+        </el-button>
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新建客户
         </el-button>
         <el-button :icon="Refresh" circle @click="loadCustomers" />
       </div>
+      <!-- 隐藏的文件输入 -->
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept=".xlsx,.xls"
+        style="display: none"
+        @change="handleFileChange"
+      />
     </header>
 
     <!-- 内容区 -->
@@ -397,7 +414,10 @@ import {
   updateCustomer,
   deleteCustomer,
   getCustomerStatistics,
-  getCustomerOrders
+  getCustomerOrders,
+  downloadCustomerTemplate,
+  exportCustomers,
+  importCustomers
 } from '@/api/customer'
 
 // 数据状态
@@ -431,6 +451,7 @@ const detailDialogVisible = ref(false)
 // 表单引用
 const customerFormRef = ref(null)
 const editFormRef = ref(null)
+const fileInputRef = ref(null)
 
 // 创建表单
 const customerForm = reactive({
@@ -684,6 +705,112 @@ const formatDate = (dateString) => {
   if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+// ==================== Excel导入导出 ====================
+
+// 下载导入模板
+const handleDownloadTemplate = async () => {
+  try {
+    await downloadCustomerTemplate()
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    ElMessage.error('下载模板失败：' + error.message)
+  }
+}
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInputRef.value.click()
+}
+
+// 处理文件变化
+const handleFileChange = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 验证文件类型
+  const validTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ]
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error('请选择Excel文件（.xlsx或.xls）')
+    event.target.value = ''
+    return
+  }
+
+  // 验证文件大小（限制5MB）
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小不能超过5MB')
+    event.target.value = ''
+    return
+  }
+
+  try {
+    const loading = ElMessage({
+      message: '正在导入数据，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    const response = await importCustomers(file)
+    loading.close()
+
+    if (response.code === 200) {
+      const { success_count, fail_count, errors } = response.data
+
+      let message = `导入完成！成功 ${success_count} 条`
+      if (fail_count > 0) {
+        message += `，失败 ${fail_count} 条`
+      }
+
+      ElMessage.success(message)
+
+      // 如果有错误，显示详情
+      if (errors && errors.length > 0) {
+        const errorMsg = errors.slice(0, 5).map(err =>
+          `第${err.row}行: ${err.error}`
+        ).join('\n')
+
+        ElMessageBox.alert(
+          errorMsg + (errors.length > 5 ? '\n...' : ''),
+          '导入错误详情',
+          { type: 'warning' }
+        )
+      }
+
+      // 刷新列表
+      loadCustomers()
+    } else {
+      ElMessage.error(response.msg || '导入失败')
+    }
+  } catch (error) {
+    ElMessage.error('导入失败：' + error.message)
+  } finally {
+    // 清空文件输入
+    event.target.value = ''
+  }
+}
+
+// 导出Excel
+const handleExport = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出数据，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    // 使用当前筛选条件导出
+    await exportCustomers(filters)
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
 }
 
 // 页面加载时获取数据

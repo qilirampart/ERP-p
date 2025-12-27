@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 flex flex-col">
+  <div class="h-full flex flex-col">
     <!-- 头部 -->
     <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
       <div>
@@ -7,11 +7,28 @@
         <p class="text-sm text-slate-500 mt-1">物料信息 / 入库出库</p>
       </div>
       <div class="flex items-center space-x-4">
+        <el-button type="success" plain @click="handleDownloadTemplate">
+          下载模板
+        </el-button>
+        <el-button type="warning" plain @click="triggerFileInput">
+          导入Excel
+        </el-button>
+        <el-button type="info" plain @click="handleExport">
+          导出Excel
+        </el-button>
         <el-button type="primary" :icon="Plus" @click="showCreateDialog">
           新增物料
         </el-button>
         <el-button :icon="Refresh" circle @click="loadMaterials" />
       </div>
+      <!-- 隐藏的文件输入 -->
+      <input
+        ref="fileInputRef"
+        type="file"
+        accept=".xlsx,.xls"
+        style="display: none"
+        @change="handleFileChange"
+      />
     </header>
 
     <!-- 内容区 -->
@@ -57,12 +74,28 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column label="库存" width="120" align="right">
+            <el-table-column label="库存" width="160" align="right">
               <template #default="{ row }">
-                <span class="font-numeric font-bold" :class="getStockColor(row.current_stock)">
-                  {{ row.current_stock }}
-                </span>
-                <span class="text-xs text-slate-400 ml-1">{{ row.stock_unit }}</span>
+                <div class="flex items-center justify-end">
+                  <el-icon
+                    v-if="getStockStatus(row) === 'CRITICAL'"
+                    class="text-red-500 mr-1"
+                    :size="16"
+                  >
+                    <WarningFilled />
+                  </el-icon>
+                  <el-icon
+                    v-else-if="getStockStatus(row) === 'WARNING'"
+                    class="text-amber-500 mr-1"
+                    :size="16"
+                  >
+                    <Warning />
+                  </el-icon>
+                  <span class="font-numeric font-bold" :class="getStockColor(row)">
+                    {{ row.current_stock }}
+                  </span>
+                  <span class="text-xs text-slate-400 ml-1">{{ row.stock_unit }}</span>
+                </div>
               </template>
             </el-table-column>
             <el-table-column label="成本单价" width="100" align="right">
@@ -143,6 +176,16 @@
           <el-input-number v-model="form.cost_price" :min="0" :precision="2" />
           <span class="text-xs text-slate-400 ml-2">元/张</span>
         </el-form-item>
+
+        <el-form-item label="最低库存" prop="min_stock">
+          <el-input-number v-model="form.min_stock" :min="0" :precision="0" class="w-full" />
+          <span class="text-xs text-slate-400 ml-2">张（严重预警阈值）</span>
+        </el-form-item>
+
+        <el-form-item label="安全库存" prop="safety_stock">
+          <el-input-number v-model="form.safety_stock" :min="0" :precision="0" class="w-full" />
+          <span class="text-xs text-slate-400 ml-2">张（一般预警阈值）</span>
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -214,14 +257,19 @@ import {
   Search,
   Edit,
   Top,
-  Bottom
+  Bottom,
+  Warning,
+  WarningFilled
 } from '@element-plus/icons-vue'
 import {
   getMaterialList,
   createMaterial,
   updateMaterial,
   stockIn,
-  stockOut
+  stockOut,
+  downloadMaterialTemplate,
+  exportMaterials,
+  importMaterials
 } from '@/api/material'
 
 const categories = [
@@ -240,6 +288,7 @@ const filters = reactive({
 const dialogVisible = ref(false)
 const dialogMode = ref('create')
 const formRef = ref(null)
+const fileInputRef = ref(null)
 const submitting = ref(false)
 
 const form = reactive({
@@ -251,7 +300,9 @@ const form = reactive({
   spec_length: 1092,
   purchase_unit: '令',
   unit_rate: 500,
-  cost_price: 0.35
+  cost_price: 0.35,
+  min_stock: 0,
+  safety_stock: 0
 })
 
 const rules = {
@@ -311,7 +362,9 @@ const resetForm = () => {
     spec_length: 1092,
     purchase_unit: '令',
     unit_rate: 500,
-    cost_price: 0.35
+    cost_price: 0.35,
+    min_stock: 0,
+    safety_stock: 0
   })
   formRef.value?.clearValidate()
 }
@@ -424,10 +477,131 @@ const getCategoryType = (category) => {
   return typeMap[category] || ''
 }
 
-const getStockColor = (stock) => {
-  if (stock < 500) return 'text-red-500'
-  if (stock < 2000) return 'text-amber-500'
+const getStockStatus = (material) => {
+  const currentStock = parseFloat(material.current_stock || 0)
+  const minStock = parseFloat(material.min_stock || 0)
+  const safetyStock = parseFloat(material.safety_stock || 0)
+
+  if (currentStock <= minStock) {
+    return 'CRITICAL'
+  } else if (currentStock <= safetyStock) {
+    return 'WARNING'
+  }
+  return 'NORMAL'
+}
+
+const getStockColor = (material) => {
+  const status = getStockStatus(material)
+  if (status === 'CRITICAL') return 'text-red-500'
+  if (status === 'WARNING') return 'text-amber-500'
   return 'text-emerald-500'
+}
+
+// ==================== Excel导入导出 ====================
+
+// 下载导入模板
+const handleDownloadTemplate = async () => {
+  try {
+    await downloadMaterialTemplate()
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    ElMessage.error('下载模板失败：' + error.message)
+  }
+}
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInputRef.value.click()
+}
+
+// 处理文件变化
+const handleFileChange = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 验证文件类型
+  const validTypes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ]
+  if (!validTypes.includes(file.type)) {
+    ElMessage.error('请选择Excel文件（.xlsx或.xls）')
+    event.target.value = ''
+    return
+  }
+
+  // 验证文件大小（限制5MB）
+  const maxSize = 5 * 1024 * 1024
+  if (file.size > maxSize) {
+    ElMessage.error('文件大小不能超过5MB')
+    event.target.value = ''
+    return
+  }
+
+  try {
+    const loading = ElMessage({
+      message: '正在导入数据，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    const response = await importMaterials(file)
+    loading.close()
+
+    if (response.code === 200) {
+      const { success_count, fail_count, errors } = response.data
+
+      let message = `导入完成！成功 ${success_count} 条`
+      if (fail_count > 0) {
+        message += `，失败 ${fail_count} 条`
+      }
+
+      ElMessage.success(message)
+
+      // 如果有错误，显示详情
+      if (errors && errors.length > 0) {
+        const { ElMessageBox } = await import('element-plus')
+        const errorMsg = errors.slice(0, 5).map(err =>
+          `第${err.row}行: ${err.error}`
+        ).join('\n')
+
+        ElMessageBox.alert(
+          errorMsg + (errors.length > 5 ? '\n...' : ''),
+          '导入错误详情',
+          { type: 'warning' }
+        )
+      }
+
+      // 刷新列表
+      loadMaterials()
+    } else {
+      ElMessage.error(response.msg || '导入失败')
+    }
+  } catch (error) {
+    ElMessage.error('导入失败：' + error.message)
+  } finally {
+    // 清空文件输入
+    event.target.value = ''
+  }
+}
+
+// 导出Excel
+const handleExport = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出数据，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    // 使用当前筛选条件导出
+    await exportMaterials(filters)
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
 }
 
 onMounted(() => {

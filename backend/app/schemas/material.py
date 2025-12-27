@@ -19,6 +19,8 @@ class MaterialBase(BaseModel):
     purchase_unit: str = Field(..., max_length=10, description="采购单位")
     unit_rate: Decimal = Field(..., gt=0, description="换算率")
     cost_price: Decimal = Field(default=Decimal("0.00"), ge=0, description="成本单价")
+    min_stock: Decimal = Field(default=Decimal("0.00"), ge=0, description="最低库存预警值")
+    safety_stock: Decimal = Field(default=Decimal("0.00"), ge=0, description="安全库存值")
 
 
 class MaterialCreate(MaterialBase):
@@ -34,6 +36,8 @@ class MaterialUpdate(BaseModel):
     spec_width: Optional[int] = None
     cost_price: Optional[Decimal] = Field(None, ge=0)
     current_stock: Optional[Decimal] = Field(None, ge=0)
+    min_stock: Optional[Decimal] = Field(None, ge=0)
+    safety_stock: Optional[Decimal] = Field(None, ge=0)
 
 
 class MaterialResponse(MaterialBase):
@@ -43,6 +47,14 @@ class MaterialResponse(MaterialBase):
     current_stock: Decimal
     created_at: datetime
     updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MaterialWithStatus(MaterialResponse):
+    """带库存状态的物料响应Schema"""
+    stock_status: str = Field(description="库存状态: NORMAL/WARNING/CRITICAL")
 
     class Config:
         from_attributes = True

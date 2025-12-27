@@ -1,5 +1,16 @@
 <template>
-  <div class="payments-container">
+  <div class="h-full flex flex-col">
+    <!-- 头部 -->
+    <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">收款管理</h1>
+        <p class="text-sm text-slate-500 mt-1">收款记录 / 账款统计</p>
+      </div>
+    </header>
+
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto px-8 lg:px-12 pb-12">
+      <div class="max-w-7xl mx-auto payments-container">
     <!-- 统计卡片 -->
     <div class="stats-grid">
       <el-card shadow="hover" class="stat-card stat-card-total">
@@ -393,6 +404,8 @@
         </el-descriptions>
       </div>
     </el-dialog>
+      </div>
+    </div>
   </div>
 </template>
 

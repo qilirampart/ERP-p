@@ -3,10 +3,12 @@
 核心功能：处理不同单位（令/吨/张）的库存变动
 """
 from decimal import Decimal
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
+from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, and_
 from app.models.material import Material
+from app.models.stock_record import StockRecord, StockOperationType
 
 
 class InventoryService:
@@ -59,11 +61,60 @@ class InventoryService:
             return stock_quantity / unit_rate
 
     @staticmethod
+    async def _create_stock_record(
+        db: AsyncSession,
+        material_id: int,
+        operation_type: StockOperationType,
+        quantity: Decimal,
+        unit: str,
+        before_stock: Decimal,
+        after_stock: Decimal,
+        order_id: Optional[int] = None,
+        operator_id: Optional[int] = None,
+        remark: Optional[str] = None
+    ) -> StockRecord:
+        """
+        创建库存流水记录（内部方法）
+
+        Args:
+            db: 数据库会话
+            material_id: 物料ID
+            operation_type: 操作类型
+            quantity: 变动数量
+            unit: 操作单位
+            before_stock: 操作前库存
+            after_stock: 操作后库存
+            order_id: 关联订单ID
+            operator_id: 操作人ID
+            remark: 备注
+
+        Returns:
+            库存流水记录对象
+        """
+        record = StockRecord(
+            material_id=material_id,
+            operation_type=operation_type,
+            quantity=quantity,
+            unit=unit,
+            before_stock=before_stock,
+            after_stock=after_stock,
+            order_id=order_id,
+            operator_id=operator_id,
+            remark=remark,
+            created_at=datetime.utcnow()
+        )
+        db.add(record)
+        return record
+
+    @staticmethod
     async def stock_in(
         db: AsyncSession,
         material_id: int,
         quantity: Decimal,
-        unit: str
+        unit: str,
+        order_id: Optional[int] = None,
+        operator_id: Optional[int] = None,
+        remark: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         入库操作（增加库存）
@@ -73,6 +124,9 @@ class InventoryService:
             material_id: 物料ID
             quantity: 入库数量
             unit: 入库单位
+            order_id: 关联订单ID
+            operator_id: 操作人ID
+            remark: 备注
 
         Returns:
             操作结果字典
@@ -86,6 +140,9 @@ class InventoryService:
         if not material:
             raise ValueError(f"物料ID {material_id} 不存在")
 
+        # 记录操作前库存
+        before_stock = material.current_stock
+
         # 转换为库存单位
         stock_change = InventoryService.convert_to_stock_unit(
             quantity, unit, material.unit_rate
@@ -98,6 +155,21 @@ class InventoryService:
             .where(Material.id == material_id)
             .values(current_stock=new_stock)
         )
+
+        # 创建库存流水记录
+        await InventoryService._create_stock_record(
+            db=db,
+            material_id=material_id,
+            operation_type=StockOperationType.IN,
+            quantity=quantity,
+            unit=unit,
+            before_stock=before_stock,
+            after_stock=new_stock,
+            order_id=order_id,
+            operator_id=operator_id,
+            remark=remark
+        )
+
         await db.commit()
 
         return {
@@ -106,6 +178,7 @@ class InventoryService:
             "quantity": quantity,
             "unit": unit,
             "stock_change": float(stock_change),
+            "before_stock": float(before_stock),
             "new_stock": float(new_stock),
             "stock_unit": material.stock_unit
         }
@@ -115,7 +188,10 @@ class InventoryService:
         db: AsyncSession,
         material_id: int,
         quantity: Decimal,
-        unit: str = "张"
+        unit: str = "张",
+        order_id: Optional[int] = None,
+        operator_id: Optional[int] = None,
+        remark: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         出库操作（减少库存）
@@ -125,6 +201,9 @@ class InventoryService:
             material_id: 物料ID
             quantity: 出库数量
             unit: 出库单位（通常为"张"）
+            order_id: 关联订单ID
+            operator_id: 操作人ID
+            remark: 备注
 
         Returns:
             操作结果字典
@@ -140,6 +219,9 @@ class InventoryService:
 
         if not material:
             raise ValueError(f"物料ID {material_id} 不存在")
+
+        # 记录操作前库存
+        before_stock = material.current_stock
 
         # 转换为库存单位
         stock_change = InventoryService.convert_to_stock_unit(
@@ -160,6 +242,21 @@ class InventoryService:
             .where(Material.id == material_id)
             .values(current_stock=new_stock)
         )
+
+        # 创建库存流水记录
+        await InventoryService._create_stock_record(
+            db=db,
+            material_id=material_id,
+            operation_type=StockOperationType.OUT,
+            quantity=quantity,
+            unit=unit,
+            before_stock=before_stock,
+            after_stock=new_stock,
+            order_id=order_id,
+            operator_id=operator_id,
+            remark=remark
+        )
+
         await db.commit()
 
         return {
@@ -168,6 +265,7 @@ class InventoryService:
             "quantity": quantity,
             "unit": unit,
             "stock_change": float(stock_change),
+            "before_stock": float(before_stock),
             "new_stock": float(new_stock),
             "stock_unit": material.stock_unit
         }
@@ -215,4 +313,69 @@ class InventoryService:
             "display_unit": display_unit,
             "purchase_unit": material.purchase_unit,
             "unit_rate": float(material.unit_rate)
+        }
+
+    @staticmethod
+    async def get_warning_materials(
+        db: AsyncSession,
+        warning_level: Optional[str] = None
+    ) -> List[Material]:
+        """
+        获取库存预警物料列表
+
+        Args:
+            db: 数据库会话
+            warning_level: 预警级别过滤 (CRITICAL/WARNING/ALL)
+
+        Returns:
+            预警物料列表
+        """
+        query = select(Material)
+
+        if warning_level == "CRITICAL":
+            # 严重预警：库存 <= 最低库存
+            query = query.where(Material.current_stock <= Material.min_stock)
+        elif warning_level == "WARNING":
+            # 一般预警：最低库存 < 库存 <= 安全库存
+            query = query.where(
+                and_(
+                    Material.current_stock > Material.min_stock,
+                    Material.current_stock <= Material.safety_stock
+                )
+            )
+        else:
+            # 所有预警：库存 <= 安全库存
+            query = query.where(Material.current_stock <= Material.safety_stock)
+
+        result = await db.execute(query)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_warning_stats(db: AsyncSession) -> Dict[str, int]:
+        """
+        获取库存预警统计
+
+        Args:
+            db: 数据库会话
+
+        Returns:
+            预警统计字典
+        """
+        # 查询所有物料
+        result = await db.execute(select(Material))
+        materials = result.scalars().all()
+
+        critical_count = 0
+        warning_count = 0
+
+        for material in materials:
+            if material.current_stock <= material.min_stock:
+                critical_count += 1
+            elif material.current_stock <= material.safety_stock:
+                warning_count += 1
+
+        return {
+            "total_warning": critical_count + warning_count,
+            "critical_count": critical_count,
+            "warning_count": warning_count
         }

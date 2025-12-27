@@ -24,7 +24,7 @@ async def generate_production_no(db: AsyncSession) -> str:
     # 查询今天已有的最大序号
     stmt = select(ProductionOrder.production_no).where(
         ProductionOrder.production_no.like(f"{prefix}%")
-    ).order_by(ProductionOrder.production_no.desc())
+    ).order_by(ProductionOrder.production_no.desc()).limit(1)
 
     result = await db.execute(stmt)
     last_no = result.scalar_one_or_none()

@@ -1,10 +1,8 @@
 /* 引入Inter字体 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* Tailwind基础样式 */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind CSS v4 - 现代化ERP设计 */
+@import "tailwindcss";
 
 /* 全局基础样式 */
 body {

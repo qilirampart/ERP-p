@@ -1,5 +1,22 @@
 <template>
-  <div class="reports-container">
+  <div class="h-full flex flex-col">
+    <!-- 头部 -->
+    <header class="h-20 flex items-center justify-between px-8 lg:px-12 flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">财务报表</h1>
+        <p class="text-sm text-slate-500 mt-1">财务概览 / 数据统计</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <el-button type="info" plain @click="handleExportFinancialOverview">
+          导出财务概览
+        </el-button>
+      </div>
+    </header>
+
+    <!-- 内容区 -->
+    <div class="flex-1 overflow-y-auto px-8 lg:px-12 pb-12">
+      <div class="max-w-7xl mx-auto reports-container">
+
     <!-- 财务概览卡片 -->
     <div class="overview-grid">
       <el-card shadow="hover" class="stat-card">
@@ -83,12 +100,15 @@
         <!-- 账龄分析 -->
         <el-tab-pane label="📊 账龄分析" name="aging">
           <div class="tab-content">
-            <div class="mb-4">
-              <el-alert type="info" :closable="false">
+            <div class="mb-4 flex items-center justify-between">
+              <el-alert type="info" :closable="false" class="flex-1">
                 <template #title>
                   <span class="font-bold">总应收金额: ¥{{ formatCurrency(agingData.total_receivable) }}</span>
                 </template>
               </el-alert>
+              <el-button type="info" plain @click="handleExportAgingAnalysis" class="ml-4">
+                导出账龄分析
+              </el-button>
             </div>
 
             <el-row :gutter="20">
@@ -146,6 +166,9 @@
                   @change="loadDailyReport"
                 />
                 <el-button type="primary" @click="loadDailyReport">查询</el-button>
+                <el-button type="info" plain @click="handleExportDailyPayments">
+                  导出日报
+                </el-button>
               </div>
 
               <el-table :data="dailyReports" border v-loading="dailyLoading">
@@ -245,6 +268,8 @@
         </el-tab-pane>
       </el-tabs>
     </el-card>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -269,7 +294,11 @@ import {
   getDailyPaymentReport,
   getMonthlyPaymentReport,
   getSalesPaymentTrend,
-  getReceivablesAging
+  getReceivablesAging,
+  exportDailyPayments,
+  exportCustomerReceivables,
+  exportReceivablesAging,
+  exportFinancialOverview
 } from '@/api/report'
 
 // 注册ECharts组件
@@ -601,6 +630,85 @@ const getPaymentMethodLabel = (method) => {
     'OTHER': '其他'
   }
   return labelMap[method] || method
+}
+
+// ==================== Excel导出 ====================
+
+// 导出财务概览
+const handleExportFinancialOverview = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出财务概览，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    await exportFinancialOverview()
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
+}
+
+// 导出收款日报
+const handleExportDailyPayments = async () => {
+  if (!dailyDateRange.value || dailyDateRange.value.length !== 2) {
+    ElMessage.warning('请选择日期范围')
+    return
+  }
+
+  try {
+    const loading = ElMessage({
+      message: '正在导出收款日报，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    await exportDailyPayments(dailyDateRange.value[0], dailyDateRange.value[1])
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
+}
+
+// 导出账龄分析
+const handleExportAgingAnalysis = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出账龄分析，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    await exportReceivablesAging()
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
+}
+
+// 导出客户欠款统计（可选）
+const handleExportCustomerReceivables = async () => {
+  try {
+    const loading = ElMessage({
+      message: '正在导出客户欠款统计，请稍候...',
+      type: 'info',
+      duration: 0
+    })
+
+    await exportCustomerReceivables()
+    loading.close()
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败：' + error.message)
+  }
 }
 
 // 初始化
